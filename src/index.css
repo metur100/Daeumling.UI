@@ -448,45 +448,15 @@ a { color: inherit; }
 @media (max-width: 600px) { .posts { grid-template-columns: minmax(0, 1fr); } .posts .post:last-child { grid-column: auto; } }
 
 /* ---------- locations ---------- */
-.locs { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
+.locs { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr); gap: clamp(28px, 4vw, 56px); align-items: stretch; }
 .map {
-  position: relative; border-radius: 28px; overflow: hidden; background: #eef2f5;
+  position: relative; display: flex; border-radius: 28px; overflow: hidden; background: #eef2f5;
   border: 1px solid rgba(255, 255, 255, .7); box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .55), 0 0 0 8px rgba(156, 195, 224, .08);
-  isolation: isolate;
 }
-.map .leaflet-container { height: clamp(400px, 62vh, 580px); width: 100%; font-family: var(--font); background: #eef2f5; }
-.map .leaflet-control-attribution { font-size: 11px; }
-.pin-wrap { background: none; border: 0; }
-.pin { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); display: block; cursor: pointer; }
-.pin-dot {
-  display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--signal); border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .35); transition: transform .3s var(--ease);
-}
-.pin.hq .pin-dot { background: var(--gewitter); border-color: var(--signal); }
-.pin.on .pin-dot { transform: scale(1.35); animation: pin-pulse 2.2s var(--ease) infinite; }
-@keyframes pin-pulse { 0% { box-shadow: 0 0 0 0 rgba(242, 140, 0, .55), 0 2px 8px rgba(0, 0, 0, .35); } 100% { box-shadow: 0 0 0 18px rgba(242, 140, 0, 0), 0 2px 8px rgba(0, 0, 0, .35); } }
-.pin-label {
-  position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap;
-  background: #fff; color: var(--gewitter); font-weight: 700; font-size: 14px; line-height: 1; padding: 7px 10px; border-radius: 999px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .2);
-}
-.pin.on .pin-label { background: var(--signal); color: #fff; }
-.map-card {
-  position: absolute; left: 16px; bottom: 16px; z-index: 500; max-width: calc(100% - 32px);
-  display: flex; flex-direction: column; gap: 2px; padding: 16px 20px; border-radius: 18px;
-  background: rgba(255, 255, 255, .96); color: var(--gewitter); box-shadow: 0 12px 34px rgba(0, 0, 0, .25); font-size: 15px;
-}
-.map-card .tech { color: var(--signal); font-size: 13px; }
-.map-card b { font-stretch: 112%; font-size: 20px; }
-.map-card-actions { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; }
-.map-card-actions a { color: var(--gewitter); font-weight: 700; text-decoration: none; }
-.map-card-actions a:hover { color: var(--signal); }
-.map-reset {
-  position: absolute; right: 16px; top: 16px; z-index: 500; border: 0; cursor: pointer; padding: 9px 14px; border-radius: 999px;
-  background: var(--gewitter); color: #fff; font: inherit; font-size: 14px; font-weight: 700; box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
-}
-.map-reset:hover { background: var(--signal); }
-.loc-list { display: flex; flex-direction: column; gap: 10px; }
+.map iframe { display: block; width: 100%; flex: 1; min-height: clamp(480px, 72vh, 720px); border: 0; }
+@media (max-width: 900px) { .map iframe { min-height: clamp(380px, 60vh, 520px); } }
+.loc-route { color: var(--signal) !important; }
+.loc-list { display: flex; flex-direction: column; justify-content: center; gap: 10px; }
 .loc {
   text-align: left; width: 100%; border-radius: 20px; border: 1px solid rgba(156, 195, 224, .16); background: rgba(13, 53, 82, .35);
   padding: 18px 22px; cursor: pointer; transition: border-color .3s, background-color .3s; color: var(--text-dark);

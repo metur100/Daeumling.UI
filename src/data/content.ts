@@ -79,8 +79,6 @@ export const locations = [
     phone: '09081 29 09 290',
     phoneHref: 'tel:090812909290',
     fax: '09081 29 09 292',
-    lat: 48.8465,
-    lng: 10.5003,
   },
   {
     id: 'muenchen',
@@ -91,8 +89,6 @@ export const locations = [
     phone: '089 200 407 82',
     phoneHref: 'tel:08920040782',
     fax: '089 925 642 34',
-    lat: 48.1946,
-    lng: 11.4627,
   },
   {
     id: 'voehringen',
@@ -103,8 +99,6 @@ export const locations = [
     phone: '07306 95 20 115',
     phoneHref: 'tel:073069520115',
     fax: '07306 95 20 116',
-    lat: 48.2826,
-    lng: 10.0791,
   },
   {
     id: 'kempten',
@@ -115,8 +109,6 @@ export const locations = [
     phone: '08376 97 63 946',
     phoneHref: 'tel:083769763946',
     fax: '08376 97 63 945',
-    lat: 47.6644,
-    lng: 10.3469,
   },
 ]
 
