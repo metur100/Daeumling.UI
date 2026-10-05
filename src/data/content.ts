@@ -79,8 +79,8 @@ export const locations = [
     phone: '09081 29 09 290',
     phoneHref: 'tel:090812909290',
     fax: '09081 29 09 292',
-    x: 336,
-    y: 200,
+    lat: 48.8465,
+    lng: 10.5003,
   },
   {
     id: 'muenchen',
@@ -91,8 +91,8 @@ export const locations = [
     phone: '089 200 407 82',
     phoneHref: 'tel:08920040782',
     fax: '089 925 642 34',
-    x: 526,
-    y: 342,
+    lat: 48.1946,
+    lng: 11.4627,
   },
   {
     id: 'voehringen',
@@ -103,8 +103,8 @@ export const locations = [
     phone: '07306 95 20 115',
     phoneHref: 'tel:073069520115',
     fax: '07306 95 20 116',
-    x: 264,
-    y: 314,
+    lat: 48.2826,
+    lng: 10.0791,
   },
   {
     id: 'kempten',
@@ -115,17 +115,11 @@ export const locations = [
     phone: '08376 97 63 946',
     phoneHref: 'tel:083769763946',
     fax: '08376 97 63 945',
-    x: 306,
-    y: 426,
+    lat: 47.6644,
+    lng: 10.3469,
   },
 ]
 
-export const serviceArea = [
-  { name: 'Nürnberg', x: 439, y: 80 },
-  { name: 'Stuttgart', x: 106, y: 214 },
-  { name: 'Augsburg', x: 407, y: 296 },
-  { name: 'Ulm', x: 248, y: 290 },
-]
 
 export const references = ['Große Kreisstadt Donauwörth', 'Donauries', 'Stadt Aalen']
 

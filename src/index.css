@@ -346,20 +346,31 @@ a { color: inherit; }
 /* ---------- process ---------- */
 .proc { position: relative; }
 .proc-pin { position: sticky; top: 0; height: 100svh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-.proc-track { display: flex; gap: 0; will-change: transform; padding-left: var(--pad); }
-.proc-step { flex: none; width: clamp(300px, 30vw, 420px); padding-right: 48px; position: relative; }
-.proc-line { position: relative; height: 3px; background: rgba(156, 195, 224, .2); margin: 40px 0 0; }
+.proc-stage { margin-top: clamp(32px, 6vh, 72px); width: 100%; }
+.proc-bar { position: relative; margin: 0 13px; height: 3px; }
+.proc-line { position: absolute; inset: 0; background: rgba(156, 195, 224, .2); }
 .proc-line-fill { position: absolute; inset: 0; background: var(--signal); transform-origin: left; box-shadow: 0 0 14px rgba(242, 140, 0, .55); }
 .proc-node {
   position: absolute; top: -12px; left: 0; width: 26px; height: 26px; border-radius: 50%;
   background: var(--gewitter); border: 3px solid rgba(156, 195, 224, .4);
   transition: border-color .4s, background-color .4s, box-shadow .4s;
 }
-.proc-step.on .proc-node { border-color: var(--signal); background: var(--signal); box-shadow: 0 0 0 6px rgba(242, 140, 0, .2); }
-.proc-num { font-stretch: 125%; font-weight: 800; font-size: clamp(64px, 7vw, 108px); line-height: 1; color: transparent; -webkit-text-stroke: 1.5px rgba(156, 195, 224, .45); transition: color .4s, -webkit-text-stroke-color .4s; margin-top: 36px; }
-.proc-step.on .proc-num { color: var(--signal); -webkit-text-stroke-color: var(--signal); }
-.proc-step .h3 { margin-top: 18px; color: #fff; }
-.proc-step p { margin: 10px 0 0; color: var(--muted-dark); max-width: 26em; }
+.proc-dot { position: absolute; top: 0; width: 26px; height: 0; margin-left: -13px; padding: 0; border: 0; background: none; cursor: pointer; }
+.proc-dot-label { position: absolute; top: 24px; left: 13px; transform: translateX(-50%); white-space: nowrap; font-size: 14px; color: var(--muted-dark); transition: color .4s; }
+.proc-dot.on .proc-node { border-color: var(--signal); background: var(--signal); }
+.proc-dot.cur .proc-node { box-shadow: 0 0 0 6px rgba(242, 140, 0, .2); }
+.proc-dot.cur .proc-dot-label { color: #fff; }
+.proc-card { margin-top: clamp(64px, 10vh, 120px); min-height: clamp(240px, 34vh, 360px); }
+.proc-num { font-stretch: 125%; font-weight: 800; font-size: clamp(64px, 9vw, 140px); line-height: 1; color: var(--signal); }
+.proc-num span { font-size: .3em; color: var(--muted-dark); margin-left: .4em; letter-spacing: .05em; }
+.proc-title { margin-top: 18px; color: #fff; }
+.proc-card .lead { margin: 14px 0 0; color: var(--muted-dark); max-width: 34em; }
+@media (max-width: 700px) {
+  .proc-dot-label { display: none; }
+  .proc-dot:first-of-type .proc-dot-label, .proc-dot:last-of-type .proc-dot-label { display: block; }
+  .proc-dot:first-of-type .proc-dot-label { left: 0; transform: none; }
+  .proc-dot:last-of-type .proc-dot-label { left: auto; right: 0; transform: none; }
+}
 
 .proc-v { position: relative; padding-left: 40px; }
 .proc-v-line { position: absolute; left: 12px; top: 8px; bottom: 8px; width: 3px; background: rgba(156, 195, 224, .2); }
@@ -438,11 +449,43 @@ a { color: inherit; }
 
 /* ---------- locations ---------- */
 .locs { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
-.map { border-radius: 28px; background: var(--tiefe); border: 1px solid rgba(156, 195, 224, .14); overflow: hidden; }
-.map svg { width: 100%; height: auto; }
-.map-pin { cursor: pointer; }
-@keyframes pulse-ring { 0% { r: 10; opacity: .8; } 100% { r: 34; opacity: 0; } }
-.pulse { animation: pulse-ring 2.2s var(--ease) infinite; }
+.map {
+  position: relative; border-radius: 28px; overflow: hidden; background: #eef2f5;
+  border: 1px solid rgba(255, 255, 255, .7); box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .55), 0 0 0 8px rgba(156, 195, 224, .08);
+  isolation: isolate;
+}
+.map .leaflet-container { height: clamp(400px, 62vh, 580px); width: 100%; font-family: var(--font); background: #eef2f5; }
+.map .leaflet-control-attribution { font-size: 11px; }
+.pin-wrap { background: none; border: 0; }
+.pin { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); display: block; cursor: pointer; }
+.pin-dot {
+  display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--signal); border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .35); transition: transform .3s var(--ease);
+}
+.pin.hq .pin-dot { background: var(--gewitter); border-color: var(--signal); }
+.pin.on .pin-dot { transform: scale(1.35); animation: pin-pulse 2.2s var(--ease) infinite; }
+@keyframes pin-pulse { 0% { box-shadow: 0 0 0 0 rgba(242, 140, 0, .55), 0 2px 8px rgba(0, 0, 0, .35); } 100% { box-shadow: 0 0 0 18px rgba(242, 140, 0, 0), 0 2px 8px rgba(0, 0, 0, .35); } }
+.pin-label {
+  position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap;
+  background: #fff; color: var(--gewitter); font-weight: 700; font-size: 14px; line-height: 1; padding: 7px 10px; border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .2);
+}
+.pin.on .pin-label { background: var(--signal); color: #fff; }
+.map-card {
+  position: absolute; left: 16px; bottom: 16px; z-index: 500; max-width: calc(100% - 32px);
+  display: flex; flex-direction: column; gap: 2px; padding: 16px 20px; border-radius: 18px;
+  background: rgba(255, 255, 255, .96); color: var(--gewitter); box-shadow: 0 12px 34px rgba(0, 0, 0, .25); font-size: 15px;
+}
+.map-card .tech { color: var(--signal); font-size: 13px; }
+.map-card b { font-stretch: 112%; font-size: 20px; }
+.map-card-actions { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; }
+.map-card-actions a { color: var(--gewitter); font-weight: 700; text-decoration: none; }
+.map-card-actions a:hover { color: var(--signal); }
+.map-reset {
+  position: absolute; right: 16px; top: 16px; z-index: 500; border: 0; cursor: pointer; padding: 9px 14px; border-radius: 999px;
+  background: var(--gewitter); color: #fff; font: inherit; font-size: 14px; font-weight: 700; box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+}
+.map-reset:hover { background: var(--signal); }
 .loc-list { display: flex; flex-direction: column; gap: 10px; }
 .loc {
   text-align: left; width: 100%; border-radius: 20px; border: 1px solid rgba(156, 195, 224, .16); background: rgba(13, 53, 82, .35);

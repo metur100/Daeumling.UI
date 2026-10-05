@@ -1,11 +1,43 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useState } from 'react'
-import { locations, serviceArea } from '../data/content'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import { useEffect, useState } from 'react'
+import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet'
+import { locations } from '../data/content'
+import { usePrefersReducedMotion } from '../hooks'
 import RevealText from './RevealText'
 
+type Loc = (typeof locations)[number]
+
+const hq = locations[0]
+const bounds = L.latLngBounds(locations.map((l) => [l.lat, l.lng]))
+
+const pin = (l: Loc, on: boolean) =>
+  L.divIcon({
+    className: 'pin-wrap',
+    iconSize: [0, 0],
+    html: `<span class="pin${on ? ' on' : ''}${l.id === hq.id ? ' hq' : ''}"><span class="pin-dot"></span><span class="pin-label">${l.name}</span></span>`,
+  })
+
+const route = (l: Loc) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${l.street}, ${l.city}`)}`
+
+/** Moves the map: overview of all branches, or close-up of the selected one. */
+function View({ active, zoomed }: { active: Loc; zoomed: boolean }) {
+  const map = useMap()
+  const reduce = usePrefersReducedMotion()
+  useEffect(() => {
+    if (zoomed) map.flyTo([active.lat, active.lng], 11, { animate: !reduce, duration: 1.1 })
+    else map.flyToBounds(bounds, { padding: [70, 70], animate: !reduce, duration: 1.1 })
+  }, [map, active, zoomed, reduce])
+  return null
+}
+
 export default function Locations() {
-  const [active, setActive] = useState('noerdlingen')
-  const hq = locations[0]
+  const [activeId, setActiveId] = useState(hq.id)
+  const [zoomed, setZoomed] = useState(false)
+  const active = locations.find((l) => l.id === activeId)!
+  const select = (id: string) => { setActiveId(id); setZoomed(true) }
+
   return (
     <section id="standorte" className="sec dark grid-dark" aria-labelledby="loc-title">
       <div className="wrap">
@@ -16,63 +48,62 @@ export default function Locations() {
 
         <div className="locs">
           <div className="map">
-            <svg viewBox="0 0 640 520" role="img" aria-label="Karte des Einsatzgebiets in Süddeutschland" style={{ fontFamily: 'inherit' }}>
-              <motion.path
-                d="M90 362 C150 334 205 300 248 290 S340 252 386 226 S460 212 498 218 S580 192 640 158"
-                fill="none" stroke="#1E557E" strokeWidth="5" strokeLinecap="round"
-                initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: 2, ease: 'easeInOut' }}
+            <MapContainer bounds={bounds} boundsOptions={{ padding: [70, 70] }} scrollWheelZoom={false} aria-label="Karte unserer Standorte in Süddeutschland">
+              <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                subdomains="abcd"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
               />
-              <text x="140" y="372" fill="#5E8FB3" fontSize="15" fontStyle="italic">Donau</text>
-              <ellipse cx="148" cy="452" rx="58" ry="17" transform="rotate(-14 148 452)" fill="#0B2E48" stroke="#1E557E" strokeWidth="2" />
-              <text x="96" y="492" fill="#5E8FB3" fontSize="15" fontStyle="italic">Bodensee</text>
-              <path d="M240 512 l26 -30 l18 18 l24 -34 l22 26 l20 -22 l26 32 l24 -28 l30 34 l22 -20 l28 30 l24 -26 l30 30 l22 -18 l20 18" fill="none" stroke="#1E557E" strokeWidth="2" strokeLinejoin="round" />
-              <text x="560" y="470" fill="#5E8FB3" fontSize="15" fontStyle="italic">Alpen</text>
-
-              {serviceArea.map((c) => (
-                <g key={c.name} fill="#9CC3E0" fontSize="16">
-                  <circle cx={c.x} cy={c.y} r="5" />
-                  <text x={c.name === 'Ulm' ? c.x - 12 : c.x + 12} y={c.y + 5} textAnchor={c.name === 'Ulm' ? 'end' : 'start'}>{c.name}</text>
-                </g>
+              {locations.slice(1).map((l) => (
+                <Polyline
+                  key={l.id}
+                  positions={[[hq.lat, hq.lng], [l.lat, l.lng]]}
+                  pathOptions={{ color: '#F28C00', weight: l.id === activeId ? 3 : 2, opacity: l.id === activeId ? 0.9 : 0.35, dashArray: '6 8' }}
+                />
               ))}
+              {locations.map((l) => (
+                <Marker
+                  key={l.id}
+                  position={[l.lat, l.lng]}
+                  icon={pin(l, l.id === activeId)}
+                  zIndexOffset={l.id === activeId ? 1000 : 0}
+                  title={`${l.name} – ${l.role}`}
+                  eventHandlers={{ click: () => select(l.id) }}
+                />
+              ))}
+              <View active={active} zoomed={zoomed} />
+            </MapContainer>
 
-              {/* connection from HQ to the selected branch */}
-              <AnimatePresence>
-                {active !== hq.id && (() => {
-                  const b = locations.find((l) => l.id === active)!
-                  const mx = (hq.x + b.x) / 2, my = Math.min(hq.y, b.y) - 40
-                  return (
-                    <motion.path
-                      key={active}
-                      d={`M${hq.x} ${hq.y} Q${mx} ${my} ${b.x} ${b.y}`}
-                      fill="none" stroke="#F28C00" strokeWidth="2.5" strokeDasharray="7 7"
-                      initial={{ pathLength: 0, opacity: 1 }} animate={{ pathLength: 1, opacity: 1 }} exit={{ opacity: 0 }}
-                      transition={{ duration: 0.7, ease: 'easeInOut' }}
-                    />
-                  )
-                })()}
-              </AnimatePresence>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active.id}
+                className="map-card"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.3 }}
+              >
+                <span className="tech">{active.role}</span>
+                <b>{active.name}</b>
+                <span>{active.street}, {active.city}</span>
+                <span className="map-card-actions">
+                  <a href={active.phoneHref}>{active.phone}</a>
+                  <a href={route(active)} target="_blank" rel="noopener noreferrer">Route planen →</a>
+                </span>
+              </motion.div>
+            </AnimatePresence>
 
-              {locations.map((l) => {
-                const on = l.id === active
-                const left = l.id === 'muenchen'
-                return (
-                  <g key={l.id} className="map-pin" onClick={() => setActive(l.id)} onMouseEnter={() => setActive(l.id)} aria-hidden="true">
-                    <circle cx={l.x} cy={l.y} r="24" fill="transparent" />
-                    {on && <circle cx={l.x} cy={l.y} r="10" fill="none" stroke="#F28C00" strokeWidth="2" className="pulse" />}
-                    <circle cx={l.x} cy={l.y} r={on ? 11 : 8} fill="#F28C00" style={{ transition: 'r .3s' }} />
-                    <text x={left ? l.x - 18 : l.x + 18} y={l.y + 7} textAnchor={left ? 'end' : 'start'} fill="#fff" fontSize="20" fontWeight="700">{l.name}</text>
-                  </g>
-                )
-              })}
-            </svg>
+            {zoomed && (
+              <button type="button" className="map-reset" onClick={() => setZoomed(false)}>Alle Standorte</button>
+            )}
           </div>
 
           <div className="loc-list">
             {locations.map((l) => {
-              const on = l.id === active
+              const on = l.id === activeId
               return (
                 <div key={l.id}>
-                  <button type="button" className={`loc ${on ? 'on' : ''}`} aria-expanded={on} onClick={() => setActive(l.id)} onMouseEnter={() => setActive(l.id)}>
+                  <button type="button" className={`loc ${on ? 'on' : ''}`} aria-expanded={on} onClick={() => select(l.id)}>
                     <span className="loc-head"><b>{l.name}</b><span className="tech">{l.role}</span></span>
                     <AnimatePresence initial={false}>
                       {on && (
@@ -96,7 +127,7 @@ export default function Locations() {
               )
             })}
             <p className="muted" style={{ fontSize: 15, margin: '8px 0 0' }}>
-              Direkt anrufen: <a href={locations.find((l) => l.id === active)!.phoneHref} style={{ color: '#fff', fontWeight: 700 }}>{locations.find((l) => l.id === active)!.phone}</a>
+              Direkt anrufen: <a href={active.phoneHref} style={{ color: '#fff', fontWeight: 700 }}>{active.phone}</a>
             </p>
           </div>
         </div>

@@ -1,15 +1,14 @@
-import { motion, type MotionValue, useMotionValueEvent, useScroll, useTransform } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion'
+import { useRef, useState } from 'react'
 import { steps } from '../data/content'
-import { useMedia, usePrefersReducedMotion } from '../hooks'
+import { usePrefersReducedMotion } from '../hooks'
 import RevealText from './RevealText'
 
 export default function Process() {
-  const wide = useMedia('(min-width: 901px)')
   const reduce = usePrefersReducedMotion()
   return (
     <section id="ablauf" className="dark grid-dark" aria-labelledby="ablauf-title">
-      {wide && !reduce ? <Horizontal /> : <Vertical />}
+      {reduce ? <Vertical /> : <Pinned />}
     </section>
   )
 }
@@ -23,34 +22,72 @@ function Head() {
   )
 }
 
-function Horizontal() {
+/** Section stays pinned while scrolling; one step is shown at a time and the next one swaps in as you scroll on. */
+function Pinned() {
   const outer = useRef<HTMLDivElement>(null)
-  const track = useRef<HTMLDivElement>(null)
-  const [dist, setDist] = useState(0)
-  const [reached, setReached] = useState(0)
+  const [[active, dir], setActive] = useState<[number, number]>([0, 1])
   const { scrollYProgress } = useScroll({ target: outer, offset: ['start start', 'end end'] })
 
-  useEffect(() => {
-    const measure = () => {
-      if (!track.current) return
-      setDist(Math.max(0, track.current.scrollWidth - window.innerWidth + 80))
-    }
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [])
+  useMotionValueEvent(scrollYProgress, 'change', (v) => {
+    const next = Math.min(steps.length - 1, Math.max(0, Math.floor(v * steps.length)))
+    setActive((cur) => (next === cur[0] ? cur : [next, next > cur[0] ? 1 : -1]))
+  })
 
-  const x = useTransform(scrollYProgress, [0.08, 0.92], [0, -dist])
-  const fill = useTransform(scrollYProgress, [0.08, 0.92], [0, 1])
-  useMotionValueEvent(fill, 'change', (v) => setReached(Math.min(steps.length, Math.floor(v * (steps.length - 0.15)) + 1)))
+  // scroll to the middle of a step's segment
+  const goTo = (i: number) => {
+    const el = outer.current
+    if (!el) return
+    const top = el.getBoundingClientRect().top + window.scrollY
+    const span = el.offsetHeight - window.innerHeight
+    window.scrollTo({ top: top + span * ((i + 0.5) / steps.length) })
+  }
 
+  const s = steps[active]
   return (
-    <div ref={outer} className="proc" style={{ height: `calc(100svh + ${dist + 400}px)` }}>
+    <div ref={outer} className="proc" style={{ height: `calc(100svh + ${steps.length * 70}svh)` }}>
+      <ol className="sr-only">
+        {steps.map((st, i) => <li key={st.title}>Schritt {i + 1}: {st.title}. {st.text}</li>)}
+      </ol>
       <div className="proc-pin">
         <Head />
-        <motion.div ref={track} className="proc-track" style={{ x, marginTop: 'clamp(40px, 7vh, 88px)' }}>
-          {steps.map((s, i) => <HStep key={s.title} i={i} title={s.title} text={s.text} on={i < reached} fill={fill} />)}
-        </motion.div>
+        <div className="wrap proc-stage" aria-hidden="true">
+          <div className="proc-bar">
+            <div className="proc-line"><motion.div className="proc-line-fill" style={{ scaleX: scrollYProgress }} /></div>
+            {steps.map((st, i) => (
+              <button
+                key={st.title}
+                type="button"
+                tabIndex={-1}
+                className={`proc-dot${i <= active ? ' on' : ''}${i === active ? ' cur' : ''}`}
+                style={{ left: `${(i / (steps.length - 1)) * 100}%` }}
+                onClick={() => goTo(i)}
+              >
+                <span className="proc-node" />
+                <span className="proc-dot-label">{st.title}</span>
+              </button>
+            ))}
+          </div>
+          <div className="proc-card">
+            <AnimatePresence mode="wait" custom={dir} initial={false}>
+              <motion.div
+                key={active}
+                custom={dir}
+                initial="enter"
+                animate="show"
+                exit="exit"
+                variants={{
+                  enter: (d: number) => ({ opacity: 0, y: d * 48 }),
+                  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+                  exit: (d: number) => ({ opacity: 0, y: d * -48, transition: { duration: 0.25 } }),
+                }}
+              >
+                <div className="proc-num">{String(active + 1).padStart(2, '0')}<span>/ {String(steps.length).padStart(2, '0')}</span></div>
+                <h3 className="h2 proc-title">{s.title}</h3>
+                <p className="lead">{s.text}</p>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -82,21 +119,6 @@ function Vertical() {
           ))}
         </ol>
       </div>
-    </div>
-  )
-}
-
-function HStep({ i, title, text, on, fill }: { i: number; title: string; text: string; on: boolean; fill: MotionValue<number> }) {
-  const scaleX = useTransform(fill, [i / steps.length, (i + 1) / steps.length], [0, 1])
-  return (
-    <div className={`proc-step ${on ? 'on' : ''}`}>
-      <div className="proc-line">
-        <motion.div className="proc-line-fill" style={{ scaleX }} />
-        <span className="proc-node" />
-      </div>
-      <div className="proc-num" aria-hidden="true">{i + 1}</div>
-      <h3 className="h3"><span className="sr-only">Schritt {i + 1}: </span>{title}</h3>
-      <p>{text}</p>
     </div>
   )
 }
