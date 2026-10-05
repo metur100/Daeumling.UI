@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useInView } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { parts, type PartId } from '../data/content'
-import { usePrefersReducedMotion } from '../hooks'
+import { useMedia, usePrefersReducedMotion } from '../hooks'
 import RevealText from './RevealText'
 
 const CYCLE = 6500
@@ -10,18 +10,20 @@ export default function System() {
   const [active, setActive] = useState<PartId>('fang')
   const [auto, setAuto] = useState(true)
   const reduce = usePrefersReducedMotion()
+  const narrow = useMedia('(max-width: 900px)')
   const ref = useRef<HTMLDivElement>(null)
+  const tabsRef = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { amount: 0.35 })
 
-  // cycle through the parts until the visitor takes over
+  // cycle through the parts until the visitor takes over (desktop only – on phones it would shift content mid-scroll)
   useEffect(() => {
-    if (!auto || reduce || !inView) return
+    if (!auto || reduce || !inView || narrow) return
     const t = window.setTimeout(() => {
       const i = parts.findIndex((p) => p.id === active)
       setActive(parts[(i + 1) % parts.length].id)
     }, CYCLE)
     return () => window.clearTimeout(t)
-  }, [active, auto, reduce, inView])
+  }, [active, auto, reduce, inView, narrow])
 
   // links from the hero strip (#part-xyz) open the matching part
   useEffect(() => {
@@ -36,6 +38,13 @@ export default function System() {
 
   const choose = (id: PartId) => { setActive(id); setAuto(false) }
 
+  // keep the selected tab visible inside the horizontal tab strip (phones)
+  useEffect(() => {
+    const strip = tabsRef.current
+    const tab = strip?.querySelector<HTMLElement>(`[data-id="${active}"]`)
+    if (strip && tab) strip.scrollTo({ left: tab.offsetLeft - (strip.clientWidth - tab.offsetWidth) / 2, behavior: reduce ? 'auto' : 'smooth' })
+  }, [active, reduce])
+
   return (
     <section id="system" className="sec light" aria-labelledby="system-title">
       <div className="wrap">
@@ -44,6 +53,51 @@ export default function System() {
           <p className="lead muted">Wirksamer Blitzschutz entsteht erst, wenn alle Teile zusammenspielen. Wählen Sie ein Bauteil und sehen Sie, wo es im Gebäude sitzt und was wir dafür tun.</p>
         </div>
 
+        {narrow ? (
+          <div className="anat-m" ref={ref}>
+            <div className="seg" role="tablist" aria-label="Bauteile" ref={tabsRef}>
+              {parts.map((p, i) => {
+                const on = p.id === active
+                return (
+                  <button
+                    key={p.id}
+                    id={`part-${p.id}`}
+                    data-id={p.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    aria-controls="anat-panel"
+                    className={`seg-btn${on ? ' on' : ''}`}
+                    onClick={() => choose(p.id)}
+                  >
+                    <span className="seg-n">{i + 1}</span>{p.title}
+                  </button>
+                )
+              })}
+            </div>
+
+            <figure className="anat-fig" style={{ margin: 0 }}>
+              <Blueprint active={active} onPick={choose} />
+            </figure>
+
+            {/* all panels share one grid cell, so switching never changes the height */}
+            <div className="anat-panels" id="anat-panel" role="tabpanel" aria-live="polite">
+              {parts.map((p) => {
+                const on = p.id === active
+                return (
+                  <div key={p.id} className={`anat-panel${on ? ' on' : ''}`} aria-hidden={!on}>
+                    <span className="tech">{p.tech}</span>
+                    <h3 className="h3">{p.title}</h3>
+                    <p className="muted" style={{ margin: '8px 0 0' }}>{p.text}</p>
+                    <ul className="anat-points">
+                      {p.points.map((pt) => <li key={pt}>{pt}</li>)}
+                    </ul>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ) : (
         <div className="anat" ref={ref}>
           <div className="anat-list" role="list">
             {parts.map((p) => {
@@ -105,6 +159,7 @@ export default function System() {
             </figcaption>
           </figure>
         </div>
+        )}
       </div>
     </section>
   )
